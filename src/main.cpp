@@ -52,7 +52,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     // load the vertex shader code
     size_t vertexCodeSize;
-    void* vertexCode = SDL_LoadFile("vertex.spv", &vertexCodeSize);
+    void* vertexCode = SDL_LoadFile("res/vertex.spv", &vertexCodeSize);
 
     // create the vertex shader
     SDL_GPUShaderCreateInfo vertexInfo{};
@@ -73,7 +73,7 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
 
     // load the fragment shader code
     size_t fragmentCodeSize;
-    void* fragmentCode = SDL_LoadFile("fragment.spv", &fragmentCodeSize);
+    void* fragmentCode = SDL_LoadFile("res/fragment.spv", &fragmentCodeSize);
 
     // create the fragment shader
     SDL_GPUShaderCreateInfo fragmentInfo{};
