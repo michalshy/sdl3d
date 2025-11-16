@@ -4,6 +4,8 @@ project(Skeletal LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include_directories(external)
+
 # Discover SDL3 and GLM
 set(SDL_SHARED OFF) # optional: build static
 set(SDL_STATIC ON)
@@ -11,9 +13,14 @@ add_subdirectory(external/SDL)
 
 find_package(glm REQUIRED)
 
-add_executable(Skeletal
-    src/main.cpp
+# collect all .cpp/.cc/.cxx files under src recursively (auto-reconfigures when files change)
+file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx"
 )
+
+add_executable(Skeletal ${SRC_FILES})
 
 target_link_libraries(Skeletal PRIVATE
     SDL3::SDL3
