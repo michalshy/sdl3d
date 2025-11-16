@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_gpu.h>
+#include "SDL3/SDL_stdinc.h"
 #include "SDL3/SDL_surface.h"
 #include "shader.h"
 #include "image.h"
@@ -13,9 +14,16 @@ struct Vertex {
 };
 
 static Vertex vertices[] = {
-    {0.0f,  0.5f, 0.0f, 0.5f, 1.0f},
-    {-0.5f,-0.5f, 0.0f, 0.0f, 0.0f},
-    {0.5f, -0.5f, 0.0f, 1.0f, 0.0f},
+    //  x      y     z    u    v
+    { -0.5f,  0.5f, 0.0f, 0.0f, 1.0f }, // top-left
+    { -0.5f, -0.5f, 0.0f, 0.0f, 0.0f }, // bottom-left
+    {  0.5f, -0.5f, 0.0f, 1.0f, 0.0f }, // bottom-right
+    {  0.5f,  0.5f, 0.0f, 1.0f, 1.0f }  // top-right
+};
+
+static uint16_t indices[] = {
+    0, 1, 2,  // first triangle
+    0, 2, 3   // second triangle
 };
 
 Renderer::RenderData* Renderer::s_Data = nullptr;
@@ -86,9 +94,10 @@ bool Renderer::Init()
 
     // Load 2d tex
     int width, height, channels;
-    SDL_Surface *img_data = image::LoadImage("res/textures/tex.bmp", 4);
-    width = img_data->w;
-    height = img_data->h;
+    //SDL_Surface *img_data = image::LoadImage("res/textures/tex.bmp", 4);
+    unsigned char* img_data = image::LoadImage("res/textures/container.jpg", &width, &height, &channels, 4);
+    //width = img_data->w;
+    //height = img_data->h;
     SDL_GPUTextureCreateInfo tex_info{};
     tex_info.type = SDL_GPU_TEXTURETYPE_2D;
     tex_info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
@@ -114,24 +123,31 @@ bool Renderer::Init()
     sampler_info.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
     s_Data->sampler = SDL_CreateGPUSampler(s_Data->device, &sampler_info);
 
+    //////////// VERTEXES //////////////////////////////////////////
     // create the vertex buffer
     SDL_GPUBufferCreateInfo bufferInfo{};
     bufferInfo.size = sizeof(vertices);
     bufferInfo.usage = SDL_GPU_BUFFERUSAGE_VERTEX;
     s_Data->vertexBuffer = SDL_CreateGPUBuffer(s_Data->device, &bufferInfo);
 
-    // create a transfer buffer to upload to the vertex buffer
+    //////////// INDICES  //////////////////////////////////////////
+    SDL_GPUBufferCreateInfo indicesInfo{};
+    indicesInfo.size = sizeof(indices);
+    indicesInfo.usage = SDL_GPU_BUFFERUSAGE_INDEX;
+    s_Data->indexBuffer = SDL_CreateGPUBuffer(s_Data->device, &indicesInfo);
+
+    // create a transfer buffer to upload vertices + indices
     SDL_GPUTransferBufferCreateInfo transferInfo{};
-    transferInfo.size = sizeof(vertices);
+    transferInfo.size = sizeof(vertices) + sizeof(indices);
     transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
-    s_Data->transferBuffer = SDL_CreateGPUTransferBuffer(s_Data->device, &transferInfo);
+    s_Data->transfer_buff = SDL_CreateGPUTransferBuffer(s_Data->device, &transferInfo);
 
-    // fill the transfer buffer
-    Vertex* data = (Vertex*)SDL_MapGPUTransferBuffer(s_Data->device, s_Data->transferBuffer, false);
-
-    SDL_memcpy(data, (void*)vertices, sizeof(vertices));
-
-    SDL_UnmapGPUTransferBuffer(s_Data->device, s_Data->transferBuffer);
+    // fill the transfer buffer: first vertices, then indices
+    uint8_t* mapped = (uint8_t*)SDL_MapGPUTransferBuffer(s_Data->device, s_Data->transfer_buff, false);
+    SDL_memcpy(mapped, vertices, sizeof(vertices));
+    SDL_memcpy(mapped + sizeof(vertices), indices, sizeof(indices));
+    SDL_UnmapGPUTransferBuffer(s_Data->device, s_Data->transfer_buff);
+    ////////////////////////////////////////////////////////////////
 
     SDL_GPUTransferBufferCreateInfo transfer_tex{};
     transfer_tex.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
@@ -139,26 +155,35 @@ bool Renderer::Init()
 
     SDL_GPUTransferBuffer* textureTransferBuffer = SDL_CreateGPUTransferBuffer(s_Data->device, &transfer_tex);
     Uint8* tex_data = (Uint8*)SDL_MapGPUTransferBuffer(s_Data->device, textureTransferBuffer, false);
-    SDL_memcpy(tex_data, img_data->pixels, width * height * 4);
+    //SDL_memcpy(tex_data, img_data->pixels, width * height * 4);
+    SDL_memcpy(tex_data, img_data, width * height * 4);
     SDL_UnmapGPUTransferBuffer(s_Data->device, textureTransferBuffer);
 
     // start a copy pass
     SDL_GPUCommandBuffer* commandBuffer = SDL_AcquireGPUCommandBuffer(s_Data->device);
     SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(commandBuffer);
 
+    /// VERTEX
     // where is the data
     SDL_GPUTransferBufferLocation location{};
-    location.transfer_buffer = s_Data->transferBuffer;
+    location.transfer_buffer = s_Data->transfer_buff;
     location.offset = 0;
-
     // where to upload the data
     SDL_GPUBufferRegion region{};
     region.buffer = s_Data->vertexBuffer;
     region.size = sizeof(vertices);
     region.offset = 0;
-
     // upload the data
-    SDL_UploadToGPUBuffer(copyPass, &location, &region, true);
+    SDL_UploadToGPUBuffer(copyPass, &location, &region, false);
+    /// INDEX
+    SDL_GPUTransferBufferLocation location_indices{};
+    location_indices.transfer_buffer = s_Data->transfer_buff;
+    location_indices.offset = sizeof(vertices);
+    SDL_GPUBufferRegion region_indices{};
+    region_indices.buffer = s_Data->indexBuffer;
+    region_indices.size = sizeof(indices);
+    region_indices.offset = 0;
+    SDL_UploadToGPUBuffer(copyPass, &location_indices, &region_indices, false);
 
     SDL_GPUTextureTransferInfo texture_transfer_info{};
     texture_transfer_info.transfer_buffer = textureTransferBuffer;
@@ -221,17 +246,19 @@ void Renderer::Render()
     SDL_GPUTextureSamplerBinding binding{};
     binding.texture = s_Data->texture;
     binding.sampler = s_Data->sampler;
-
+    
     SDL_BindGPUFragmentSamplers(renderPass, 0, &binding, 1);
-
-    // bind the vertex buffer
-    SDL_GPUBufferBinding bufferBindings[1];
-    bufferBindings[0].buffer = s_Data->vertexBuffer; // index 0 is slot 0 in this example
-    bufferBindings[0].offset = 0; // start from the first byte
-
-    SDL_BindGPUVertexBuffers(renderPass, 0, bufferBindings, 1); // bind one buffer starting from slot 0
-
-    SDL_DrawGPUPrimitives(renderPass, 3, 1, 0, 0);
+    // bind the buffers
+    SDL_GPUBufferBinding vertex_bindings[1];
+    vertex_bindings[0].buffer = s_Data->vertexBuffer; // index 0 is slot 0 in this example
+    vertex_bindings[0].offset = 0; // start from the first byte
+    SDL_GPUBufferBinding index_bindings[1];
+    index_bindings[0].buffer = s_Data->indexBuffer;
+    index_bindings[0].offset = 0;
+    
+    SDL_BindGPUVertexBuffers(renderPass, 0, vertex_bindings, 1); // bind one buffer starting from slot 0
+    SDL_BindGPUIndexBuffer(renderPass, index_bindings, SDL_GPU_INDEXELEMENTSIZE_16BIT);
+    SDL_DrawGPUIndexedPrimitives(renderPass, 6, 1, 0, 0, 0);
 
     SDL_EndGPURenderPass(renderPass);
     SDL_SubmitGPUCommandBuffer(commandBuffer);
@@ -247,7 +274,7 @@ void Renderer::Shutdown()
     // release the pipeline
     SDL_ReleaseGPUGraphicsPipeline(s_Data->device, s_Data->graphicsPipeline);
 
-    SDL_ReleaseGPUTransferBuffer(s_Data->device, s_Data->transferBuffer);
+    SDL_ReleaseGPUTransferBuffer(s_Data->device, s_Data->transfer_buff);
     SDL_ReleaseGPUBuffer(s_Data->device, s_Data->vertexBuffer);
     
     // destroy the GPU device

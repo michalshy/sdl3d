@@ -25,7 +25,8 @@ private:
         SDL_GPUTexture* texture = nullptr;
         SDL_GPUSampler* sampler = nullptr;
         SDL_GPUBuffer* vertexBuffer = nullptr;
-        SDL_GPUTransferBuffer* transferBuffer = nullptr;
+        SDL_GPUBuffer* indexBuffer  = nullptr;
+        SDL_GPUTransferBuffer* transfer_buff = nullptr;
         SDL_GPUGraphicsPipeline* graphicsPipeline = nullptr;
     };
     static RenderData* s_Data;

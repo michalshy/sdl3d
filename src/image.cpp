@@ -40,8 +40,8 @@ namespace image
         return result;
     }
 
-    float* LoadHDRImage(const char* path, int* width, int* height, int* channels, int desired_channels)
+    unsigned char* LoadImage(const char* path, int* width, int* height, int* channels, int desired_channels)
     {
-        return stbi_loadf(path, width, height, channels, desired_channels);
+        return stbi_load(path, width, height, channels, desired_channels);
     }
 }
