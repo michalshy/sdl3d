@@ -1,5 +1,3 @@
-#define STB_IMAGE_IMPLEMENTATION
-
 #define SDL_MAIN_USE_CALLBACKS 1
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -38,8 +36,8 @@ SDL_AppResult SDL_AppInit(void** appstate, int argc, char* argv[])
     device = SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV, true, NULL);
     SDL_ClaimWindowForGPUDevice(device, window);
 
-    SDL_GPUShader* vertexShader = shader::LoadShader(device, "res/shaders/vertex.spv", 0, 0, 0, 0);
-    SDL_GPUShader* fragmentShader = shader::LoadShader(device, "res/shaders/fragment.spv", 1, 0, 0, 0);
+    SDL_GPUShader* vertexShader = shader::LoadShader(device, "res/shaders/compiled/shvert.spv", 0, 0, 0, 0);
+    SDL_GPUShader* fragmentShader = shader::LoadShader(device, "res/shaders/compiled/shfrag.spv", 1, 0, 0, 0);
 
     // create the graphics pipeline
     SDL_GPUGraphicsPipelineCreateInfo pipelineInfo{};

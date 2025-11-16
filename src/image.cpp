@@ -1,5 +1,11 @@
 #include "image.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <SDL3/SDL.h>
+#include "stb_image.h"
+
+
+
 namespace image
 {
     SDL_Surface* LoadImage(const char* path, int desired_channels)
@@ -32,5 +38,10 @@ namespace image
         }
 
         return result;
+    }
+
+    float* LoadHDRImage(const char* path, int* width, int* height, int* channels, int desired_channels)
+    {
+        return stbi_loadf(path, width, height, channels, desired_channels);
     }
 }
