@@ -11,7 +11,7 @@ set(SDL_SHARED OFF) # optional: build static
 set(SDL_STATIC ON)
 add_subdirectory(external/SDL)
 
-find_package(glm REQUIRED)
+add_subdirectory(external/glm)
 
 # collect all .cpp/.cc/.cxx files under src recursively (auto-reconfigures when files change)
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
@@ -26,6 +26,12 @@ target_link_libraries(Skeletal PRIVATE
     SDL3::SDL3
     glm::glm
 )
+
+if (WIN32 AND MSVC)
+    set_target_properties(Skeletal PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:Skeletal>"
+    )
+endif()
 
 # Copy res directory to the target runtime directory after build
 add_custom_command(TARGET Skeletal POST_BUILD

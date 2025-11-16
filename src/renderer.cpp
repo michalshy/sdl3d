@@ -1,9 +1,5 @@
 #include "renderer.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_gpu.h>
-#include "SDL3/SDL_stdinc.h"
-#include "SDL3/SDL_surface.h"
 #include "shader.h"
 #include "image.h"
 

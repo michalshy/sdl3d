@@ -1,6 +1,5 @@
 #include "shader.h"
-#include "SDL3/SDL_gpu.h"
-#include "SDL3/SDL_stdinc.h"
+#include <SDL3/SDL_gpu.h>
 
 namespace shader
 {

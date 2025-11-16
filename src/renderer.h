@@ -1,5 +1,7 @@
 #pragma once
 
+#include <SDL3/SDL_gpu.h>
+
 class SDL_Window;
 class SDL_GPUDevice;
 class SDL_GPUTexture;
@@ -7,6 +9,7 @@ class SDL_GPUSampler;
 class SDL_GPUBuffer;
 class SDL_GPUTransferBuffer;
 class SDL_GPUGraphicsPipeline;
+class SDL_GPUShader;
 
 class Renderer
 {
