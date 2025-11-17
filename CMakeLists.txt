@@ -13,18 +13,26 @@ add_subdirectory(external/SDL)
 
 add_subdirectory(external/glm)
 
-# collect all .cpp/.cc/.cxx files under src recursively (auto-reconfigures when files change)
+add_subdirectory(external/assimp)
+
 file(GLOB_RECURSE SRC_FILES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx"
 )
 
-add_executable(Skeletal ${SRC_FILES})
+# collect headers so IDEs show them (not required for build)
+file(GLOB_RECURSE HDR_FILES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp"
+)
+
+add_executable(Skeletal ${SRC_FILES} ${HDR_FILES})
 
 target_link_libraries(Skeletal PRIVATE
     SDL3::SDL3
     glm::glm
+    assimp::assimp
 )
 
 if (WIN32 AND MSVC)
